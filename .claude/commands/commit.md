@@ -1,15 +1,16 @@
 ---
-description: Create a git commit for staged changes
+description: Create a commit for changes
+argument-hint: [message]
 ---
 
-# Git Commit Staged Changes
+# Commit Changes
 
 ## Git Commit Conventions
 
 Use [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 ```text
-<type>(<scope>): <short description>
+<type>: <short description>
 ```
 
 **Types:**
@@ -37,4 +38,4 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 ## Your task
 
-Based on the above changes, create a single git commit. Commit message should be always one line. Before actually committing your changes ask user for approval with the comment message.
+Based on the above changes, create a single git commit while following the convention. $ARGUMENTS
