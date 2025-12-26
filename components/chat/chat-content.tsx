@@ -1,24 +1,24 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowUp,
-  Copy,
-  Mic,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  ThumbsDown,
-  ThumbsUp,
-  Trash,
-} from "lucide-react";
+import { TextStreamChatTransport } from "ai";
+import { ArrowUp, Check, ChevronDown, Copy, Square } from "lucide-react";
+import { toast } from "sonner";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
   ChatContainerContent,
   ChatContainerRoot,
 } from "@/components/ui/chat-container";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Message,
   MessageAction,
@@ -26,28 +26,21 @@ import {
   MessageContent,
 } from "@/components/ui/message";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   PromptInput,
-  PromptInputAction,
   PromptInputActions,
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import type { Character } from "@/lib/characters";
+import { AVAILABLE_MODELS, DEFAULT_MODEL, type Model } from "@/lib/models";
 import { cn } from "@/lib/utils";
 import { type Message as DbMessage, chatKeys } from "@/queries";
-
-type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-};
-
-type ChatApiResponse = {
-  conversationId: string;
-  userMessage: { id: string; role: string; content: string };
-  assistantMessage: { id: string; role: string; content: string };
-};
 
 type ChatContentProps = {
   character: Character;
@@ -61,114 +54,97 @@ export function ChatContent({
   initialMessages = [],
 }: ChatContentProps) {
   const queryClient = useQueryClient();
-  const [prompt, setPrompt] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
-    initialMessages.map((m) => ({
+  const [currentConversationId, setCurrentConversationId] =
+    useState(conversationId);
+  const [input, setInput] = useState("");
+  const [selectedModel, setSelectedModel] = useState<Model>(DEFAULT_MODEL);
+  const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+
+  const { messages, sendMessage, status, stop } = useChat({
+    id: currentConversationId ?? "new",
+    messages: initialMessages.map((m) => ({
       id: m.id,
       role: m.role as "user" | "assistant",
-      content: m.content,
-    }))
-  );
-  const [currentConversationId, setCurrentConversationId] = useState<
-    string | undefined
-  >(conversationId);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-
-  const handleSubmit = async () => {
-    if (!prompt.trim()) return;
-
-    const userMessage = prompt.trim();
-    setPrompt("");
-    setIsLoading(true);
-
-    // Optimistically add user message
-    const tempUserMessageId = `temp-${Date.now()}`;
-    const newUserMessage: ChatMessage = {
-      id: tempUserMessageId,
-      role: "user",
-      content: userMessage,
-    };
-
-    const updatedMessages = [...chatMessages, newUserMessage];
-    setChatMessages(updatedMessages);
-
-    try {
-      // Build history for AI context (exclude the optimistic message)
-      const history = chatMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      // Call API - it handles conversation creation and message saving
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: userMessage,
-          characterSlug: character.slug,
-          conversationId: currentConversationId,
-          history,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
-
-      const data = (await response.json()) as ChatApiResponse;
-
-      // Replace temp message with saved one and add assistant response
-      setChatMessages((prev) =>
-        prev.map((m) =>
-          m.id === tempUserMessageId
-            ? {
-                id: data.userMessage.id,
-                role: "user" as const,
-                content: data.userMessage.content,
-              }
-            : m
-        )
-      );
-
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: data.assistantMessage.id,
-          role: "assistant" as const,
-          content: data.assistantMessage.content,
-        },
-      ]);
-
-      // Update conversation ID and URL if this was a new conversation
-      if (!currentConversationId) {
-        setCurrentConversationId(data.conversationId);
-        // Update URL without navigation (just change the address bar)
-        window.history.replaceState(null, "", `/chat/${data.conversationId}`);
-      }
-
-      // Invalidate queries to refresh sidebar
+      parts: [{ type: "text" as const, text: m.content }],
+    })),
+    transport: new TextStreamChatTransport({
+      api: "/api/chat",
+      body: {
+        characterSlug: character.slug,
+        conversationId: currentConversationId,
+        model: selectedModel.id,
+      },
+    }),
+    onFinish: () => {
+      // Messages are saved server-side, just refresh sidebar
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
-      if (currentConversationId) {
-        queryClient.invalidateQueries({
-          queryKey: chatKeys.conversation(currentConversationId),
-        });
-      }
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("Chat error:", error);
-      // Remove optimistic message and show error
-      setChatMessages((prev) => prev.filter((m) => m.id !== tempUserMessageId));
-      const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
-      };
-      setChatMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
+    },
+  });
+
+  // Handle new conversation ID after first message
+  useEffect(() => {
+    // If we don't have a conversation ID yet but have messages, fetch the latest one
+    if (!currentConversationId && messages.length > 0 && status === "ready") {
+      // Query for the latest conversation for this character
+      queryClient
+        .fetchQuery({
+          queryKey: ["chat", "latest", character.slug],
+          queryFn: async () => {
+            const { createClient } = await import("@/lib/supabase/client");
+            const supabase = createClient();
+            const { data } = await supabase
+              .from("conversations")
+              .select("id")
+              .eq("character_slug", character.slug)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .single();
+            return data?.id ?? null;
+          },
+        })
+        .then((newId) => {
+          if (newId) {
+            setCurrentConversationId(newId);
+            window.history.replaceState(null, "", `/chat/${newId}`);
+          }
+        });
     }
+  }, [
+    currentConversationId,
+    messages.length,
+    status,
+    character.slug,
+    queryClient,
+  ]);
+
+  // Streaming status indicators
+  const isStreaming = status === "streaming";
+  const isSubmitting = status === "submitted";
+  const isLoading = isStreaming || isSubmitting;
+
+  const onSubmit = () => {
+    if (!input.trim() || isLoading) return;
+    sendMessage({ text: input });
+    setInput("");
+  };
+
+  // Helper to get text content from message parts
+  const getMessageContent = (msg: (typeof messages)[number]) => {
+    return (
+      msg.parts
+        ?.filter((p) => p.type === "text")
+        .map((p) => p.text)
+        .join("") ?? ""
+    );
+  };
+
+  // Copy message content to clipboard
+  const handleCopy = async (content: string) => {
+    await navigator.clipboard.writeText(content);
+    toast.success("Copied to clipboard");
   };
 
   return (
@@ -190,12 +166,15 @@ export function ChatContent({
             </div>
           </div>
         </div>
+        <div className="ml-auto">
+          <ThemeToggle />
+        </div>
       </header>
 
-      <div ref={chatContainerRef} className="relative flex-1 overflow-y-auto">
+      <div id="chat-container" className="relative flex-1 overflow-y-auto">
         <ChatContainerRoot className="h-full">
           <ChatContainerContent className="space-y-0 px-5 py-12">
-            {chatMessages.length === 0 ? (
+            {messages.length === 0 ? (
               <div className="mx-auto flex max-w-3xl flex-col items-center justify-center py-20">
                 <Image
                   src={character.avatarUrl}
@@ -215,7 +194,7 @@ export function ChatContent({
                       variant="outline"
                       className="h-auto px-4 py-3 text-left whitespace-normal"
                       onClick={() => {
-                        setPrompt(msg);
+                        setInput(msg);
                       }}
                     >
                       {msg}
@@ -224,104 +203,106 @@ export function ChatContent({
                 </div>
               </div>
             ) : (
-              chatMessages.map((message, index) => {
-                const isAssistant = message.role === "assistant";
-                const isLastMessage = index === chatMessages.length - 1;
+              <>
+                {messages.map((message, index) => {
+                  const isAssistant = message.role === "assistant";
+                  const isLastMessage = index === messages.length - 1;
+                  const isLastAssistantStreaming =
+                    isLastMessage && isAssistant && isStreaming;
+                  const content = getMessageContent(message);
 
-                return (
-                  <Message
-                    key={message.id}
-                    className={cn(
-                      "mx-auto flex w-full max-w-3xl flex-col gap-2 px-6",
-                      isAssistant ? "items-start" : "items-end"
-                    )}
-                  >
-                    {isAssistant ? (
-                      <div className="group flex w-full flex-col gap-0">
-                        <MessageContent
-                          className="prose text-foreground flex-1 rounded-lg bg-transparent p-0"
-                          markdown
+                  return (
+                    <Message
+                      key={message.id}
+                      className={cn(
+                        "mx-auto flex w-full max-w-3xl flex-col gap-2 px-6",
+                        isAssistant ? "items-start" : "items-end"
+                      )}
+                    >
+                      {isAssistant ? (
+                        <div className="group flex w-full flex-col gap-0">
+                          <MessageContent
+                            className="prose text-foreground flex-1 rounded-lg bg-transparent p-0"
+                            markdown
+                          >
+                            {isLastAssistantStreaming
+                              ? content + " ▊"
+                              : content}
+                          </MessageContent>
+                          <MessageActions
+                            className={cn(
+                              "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
+                              isLastMessage && !isStreaming && "opacity-100"
+                            )}
+                          >
+                            <MessageAction tooltip="Copy" delayDuration={100}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full"
+                                onClick={() => handleCopy(content)}
+                              >
+                                <Copy />
+                              </Button>
+                            </MessageAction>
+                          </MessageActions>
+                        </div>
+                      ) : (
+                        <div className="group flex w-full flex-col items-end gap-1">
+                          <MessageContent className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 sm:max-w-[75%]">
+                            {content}
+                          </MessageContent>
+                          <MessageActions
+                            className={cn(
+                              "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                            )}
+                          >
+                            <MessageAction tooltip="Copy" delayDuration={100}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full"
+                                onClick={() => handleCopy(content)}
+                              >
+                                <Copy />
+                              </Button>
+                            </MessageAction>
+                          </MessageActions>
+                        </div>
+                      )}
+                    </Message>
+                  );
+                })}
+
+                {/* Thinking indicator */}
+                {isSubmitting && (
+                  <Message className="mx-auto flex w-full max-w-3xl flex-col items-start gap-2 px-6">
+                    <div className="text-muted-foreground flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <span
+                          className="animate-bounce"
+                          style={{ animationDelay: "0ms" }}
                         >
-                          {message.content}
-                        </MessageContent>
-                        <MessageActions
-                          className={cn(
-                            "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
-                            isLastMessage && "opacity-100"
-                          )}
+                          ●
+                        </span>
+                        <span
+                          className="animate-bounce"
+                          style={{ animationDelay: "150ms" }}
                         >
-                          <MessageAction tooltip="Copy" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                            >
-                              <Copy />
-                            </Button>
-                          </MessageAction>
-                          <MessageAction tooltip="Upvote" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                            >
-                              <ThumbsUp />
-                            </Button>
-                          </MessageAction>
-                          <MessageAction tooltip="Downvote" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                            >
-                              <ThumbsDown />
-                            </Button>
-                          </MessageAction>
-                        </MessageActions>
+                          ●
+                        </span>
+                        <span
+                          className="animate-bounce"
+                          style={{ animationDelay: "300ms" }}
+                        >
+                          ●
+                        </span>
                       </div>
-                    ) : (
-                      <div className="group flex flex-col items-end gap-1">
-                        <MessageContent className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 sm:max-w-[75%]">
-                          {message.content}
-                        </MessageContent>
-                        <MessageActions
-                          className={cn(
-                            "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                          )}
-                        >
-                          <MessageAction tooltip="Edit" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                            >
-                              <Pencil />
-                            </Button>
-                          </MessageAction>
-                          <MessageAction tooltip="Delete" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                            >
-                              <Trash />
-                            </Button>
-                          </MessageAction>
-                          <MessageAction tooltip="Copy" delayDuration={100}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-full"
-                            >
-                              <Copy />
-                            </Button>
-                          </MessageAction>
-                        </MessageActions>
-                      </div>
-                    )}
+                      <span className="text-sm">Thinking...</span>
+                    </div>
                   </Message>
-                );
-              })
+                )}
+              </>
             )}
           </ChatContainerContent>
           <div className="absolute bottom-4 left-1/2 flex w-full max-w-3xl -translate-x-1/2 justify-end px-5">
@@ -334,9 +315,9 @@ export function ChatContent({
         <div className="mx-auto max-w-3xl">
           <PromptInput
             isLoading={isLoading}
-            value={prompt}
-            onValueChange={setPrompt}
-            onSubmit={handleSubmit}
+            value={input}
+            onValueChange={setInput}
+            onSubmit={onSubmit}
             className="border-input bg-popover relative z-10 w-full rounded-3xl border p-0 pt-1 shadow-xs"
           >
             <div className="flex flex-col">
@@ -346,50 +327,77 @@ export function ChatContent({
               />
 
               <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+                <Popover
+                  open={modelSelectorOpen}
+                  onOpenChange={setModelSelectorOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 rounded-full px-3"
+                    >
+                      <span className="text-xs">{selectedModel.name}</span>
+                      <ChevronDown className="size-3 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-0" align="start" side="top">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup>
+                          {AVAILABLE_MODELS.map((model) => (
+                            <CommandItem
+                              key={model.id}
+                              value={model.id}
+                              onSelect={() => {
+                                setSelectedModel(model);
+                                setModelSelectorOpen(false);
+                              }}
+                              className="flex items-start gap-3 px-3 py-2.5"
+                            >
+                              <Check
+                                className={cn(
+                                  "mt-0.5 size-4 shrink-0",
+                                  selectedModel.id === model.id
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-medium">
+                                  {model.name}
+                                </span>
+                                <span className="text-muted-foreground text-xs">
+                                  {model.description}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <div className="flex items-center gap-2">
-                  <PromptInputAction tooltip="Add a new action">
+                  {isStreaming ? (
                     <Button
-                      variant="outline"
                       size="icon"
+                      variant="destructive"
+                      onClick={stop}
                       className="size-9 rounded-full"
                     >
-                      <Plus size={18} />
+                      <Square size={14} />
                     </Button>
-                  </PromptInputAction>
-
-                  <PromptInputAction tooltip="More actions">
+                  ) : (
                     <Button
-                      variant="outline"
                       size="icon"
+                      disabled={!input.trim() || isLoading}
+                      onClick={onSubmit}
                       className="size-9 rounded-full"
                     >
-                      <MoreHorizontal size={18} />
-                    </Button>
-                  </PromptInputAction>
-                </div>
-                <div className="flex items-center gap-2">
-                  <PromptInputAction tooltip="Voice input">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="size-9 rounded-full"
-                    >
-                      <Mic size={18} />
-                    </Button>
-                  </PromptInputAction>
-
-                  <Button
-                    size="icon"
-                    disabled={!prompt.trim() || isLoading}
-                    onClick={handleSubmit}
-                    className="size-9 rounded-full"
-                  >
-                    {!isLoading ? (
                       <ArrowUp size={18} />
-                    ) : (
-                      <span className="size-3 rounded-xs bg-white" />
-                    )}
-                  </Button>
+                    </Button>
+                  )}
                 </div>
               </PromptInputActions>
             </div>

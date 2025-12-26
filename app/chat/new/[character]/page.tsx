@@ -20,7 +20,7 @@ export default function NewChatPage({
 
   return (
     <SidebarProvider>
-      <ChatSidebar character={character} />
+      <ChatSidebar character={character} isNewChat />
       <SidebarInset>
         <ChatContent character={character} />
       </SidebarInset>

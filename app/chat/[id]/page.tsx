@@ -3,9 +3,13 @@
 import { use } from "react";
 import { notFound } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ChatContent, ChatSidebar } from "@/components/chat";
+import {
+  ChatContent,
+  ChatContentSkeleton,
+  ChatSidebar,
+} from "@/components/chat";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { getCharacter } from "@/lib/characters";
+import { getCharacter, getDefaultCharacter } from "@/lib/characters";
 import { conversationQueryOptions } from "@/queries";
 
 export default function ConversationPage({
@@ -18,19 +22,23 @@ export default function ConversationPage({
     conversationQueryOptions(id)
   );
 
-  if (isLoading) {
+  // Get character from conversation or use default for loading state
+  const character = conversation
+    ? getCharacter(conversation.character_slug)
+    : null;
+
+  // Show skeleton while loading - sidebar and shell are always visible
+  if (isLoading || !conversation) {
+    const defaultCharacter = getDefaultCharacter();
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading conversation...</div>
-      </div>
+      <SidebarProvider>
+        <ChatSidebar character={defaultCharacter} currentConversationId={id} />
+        <SidebarInset>
+          <ChatContentSkeleton />
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
-
-  if (!conversation) {
-    notFound();
-  }
-
-  const character = getCharacter(conversation.character_slug);
 
   if (!character) {
     notFound();

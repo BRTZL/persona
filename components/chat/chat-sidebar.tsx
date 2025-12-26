@@ -22,8 +22,9 @@ import {
 import { conversationsQueryOptions } from "@/queries";
 
 type ChatSidebarProps = {
-  character: Character;
+  character?: Character;
   currentConversationId?: string;
+  isNewChat?: boolean; // true when on /chat/new/[character] page
 };
 
 function groupConversationsByDate(
@@ -70,6 +71,7 @@ function groupConversationsByDate(
 export function ChatSidebar({
   character,
   currentConversationId,
+  isNewChat = false,
 }: ChatSidebarProps) {
   const allCharacters = getAllCharacters();
   const { data: conversations = [] } = useQuery(conversationsQueryOptions());
@@ -98,7 +100,7 @@ export function ChatSidebar({
             className="mb-4 flex w-full items-center gap-2"
             asChild
           >
-            <Link href={`/chat/new/${character.slug}`}>
+            <Link href="/chat/new">
               <PlusIcon className="size-4" />
               <span>New Chat</span>
             </Link>
@@ -113,7 +115,7 @@ export function ChatSidebar({
               <SidebarMenuButton
                 key={char.slug}
                 asChild
-                isActive={char.slug === character.slug}
+                isActive={isNewChat && char.slug === character?.slug}
               >
                 <Link
                   href={`/chat/new/${char.slug}`}

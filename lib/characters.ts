@@ -147,3 +147,7 @@ export function getAllCharacters(): Character[] {
 export function isValidCharacterSlug(slug: string): slug is CharacterSlug {
   return slug in CHARACTERS;
 }
+
+export function getDefaultCharacter(): Character {
+  return CHARACTERS.luna;
+}
