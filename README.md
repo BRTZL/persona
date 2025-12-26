@@ -1,36 +1,140 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Persona
 
-## Getting Started
+An AI chat application featuring 8 unique AI personalities, each with distinct traits, expertise, and communication styles.
 
-First, run the development server:
+## Tech Stack
+
+| Category             | Technology                                                                   |
+| -------------------- | ---------------------------------------------------------------------------- |
+| **Framework**        | [Next.js 15](https://nextjs.org) with App Router                             |
+| **Language**         | TypeScript (strict mode, no `any`)                                           |
+| **Styling**          | [Tailwind CSS](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com) |
+| **Database**         | [Supabase](https://supabase.com) (PostgreSQL + Auth)                         |
+| **AI Provider**      | [OpenRouter](https://openrouter.ai) (multi-model support)                    |
+| **State Management** | [TanStack Query](https://tanstack.com/query)                                 |
+| **Validation**       | [Zod](https://zod.dev)                                                       |
+| **AI SDK**           | [Vercel AI SDK](https://sdk.vercel.ai)                                       |
+
+## Setup
+
+### Prerequisites
+
+- Node.js 18+
+- pnpm
+- Supabase account
+- OpenRouter API key
+
+### Environment Variables
+
+Create a `.env.local` file:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# OpenRouter
+OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Database Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run the Supabase migrations:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx supabase db push
+```
 
-## Learn More
+### Installation
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Install dependencies
+pnpm install
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Run development server
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-## Deploy on Vercel
+### Available Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Command         | Description                       |
+| --------------- | --------------------------------- |
+| `pnpm dev`      | Start development server          |
+| `pnpm build`    | Build for production              |
+| `pnpm check`    | Run lint, format, and type checks |
+| `pnpm lint:fix` | Auto-fix linting issues           |
+| `pnpm format`   | Format code with Prettier         |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Architecture
+
+### Project Structure
+
+```text
+├── app/                    # Next.js App Router pages
+│   ├── api/chat/          # Streaming chat API endpoint
+│   ├── auth/              # OAuth callback handling
+│   └── chat/              # Chat UI pages
+├── components/
+│   ├── chat/              # Chat-specific components
+│   └── ui/                # shadcn/ui components
+├── lib/
+│   ├── characters.ts      # AI personality definitions
+│   ├── models.ts          # Available LLM models
+│   ├── supabase/          # Supabase client utilities
+│   └── title-generation.ts # AI-generated conversation titles
+├── queries/               # TanStack Query hooks
+└── supabase/              # Database migrations
+```
+
+### Key Architectural Decisions
+
+#### Server-Side Message Persistence
+
+Messages are saved server-side in the API route rather than client-side. This ensures data consistency and prevents duplicate saves when components re-render.
+
+```text
+User Message → API Route → Save to DB → Stream Response → Save Assistant Message
+```
+
+#### Multi-Model Support
+
+The app supports multiple LLM providers through OpenRouter, allowing users to switch between models (Gemini, Claude, GPT-4o, Llama) per conversation.
+
+#### AI-Generated Titles
+
+Conversation titles are generated asynchronously after the first message exchange using a fast model (Gemini Flash), avoiding placeholder titles like "New Chat".
+
+#### HTTP-Only Cookie Auth
+
+Supabase auth tokens are stored in HTTP-only cookies (not localStorage) for XSS protection. The `/auth/callback` route handles the OAuth code exchange server-side.
+
+#### Streaming with AI SDK
+
+Uses Vercel AI SDK's `streamText` with smooth streaming transforms for a polished typing experience. The `TextStreamChatTransport` handles the client-server communication.
+
+#### Theme-Aware Code Blocks
+
+Syntax highlighting adapts to light/dark mode using Shiki with automatic theme detection via `next-themes`.
+
+## Characters
+
+The app includes 8 AI personalities:
+
+| Character | Description                               |
+| --------- | ----------------------------------------- |
+| Luna      | Empathetic listener and emotional support |
+| Atlas     | Strategic thinker and problem solver      |
+| Nova      | Creative muse and artistic inspiration    |
+| Sage      | Wise mentor and life advisor              |
+| Echo      | Curious explorer and knowledge seeker     |
+| Blaze     | Motivational coach and fitness expert     |
+| Zen       | Mindfulness guide and meditation teacher  |
+| Pixel     | Tech enthusiast and coding companion      |
+
+Each character has a unique system prompt, avatar, and kickstart messages.
+
+## License
+
+MIT
