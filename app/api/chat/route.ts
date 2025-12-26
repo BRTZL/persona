@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCharacter, isValidCharacterSlug } from "@/lib/characters";
 import { env } from "@/lib/env";
+import { createClient } from "@/lib/supabase/server";
 
 const DEFAULT_MODEL = "google/gemini-2.0-flash-001";
 
@@ -13,6 +14,7 @@ const MessageSchema = z.object({
 const ChatRequestSchema = z.object({
   message: z.string().min(1),
   characterSlug: z.string(),
+  conversationId: z.uuid().optional(),
   history: z.array(MessageSchema).optional().default([]),
   model: z.string().optional(),
 });
@@ -36,6 +38,17 @@ type OpenRouterResponse = {
 
 export async function POST(request: Request) {
   try {
+    // Authenticate user
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Parse and validate request
     const body = await request.json();
     const parsed = ChatRequestSchema.safeParse(body);
 
@@ -46,7 +59,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const { message, characterSlug, history, model } = parsed.data;
+    const { message, characterSlug, conversationId, history, model } =
+      parsed.data;
 
     if (!isValidCharacterSlug(characterSlug)) {
       return NextResponse.json(
@@ -63,8 +77,67 @@ export async function POST(request: Request) {
       );
     }
 
-    // Build messages array with system prompt and history
-    const messages: OpenRouterMessage[] = [
+    let actualConversationId = conversationId;
+
+    // If no conversationId, create a new conversation
+    if (!actualConversationId) {
+      const { data: newConversation, error: createError } = await supabase
+        .from("conversations")
+        .insert({
+          user_id: user.id,
+          character_slug: characterSlug,
+          title: message.slice(0, 50),
+        })
+        .select("id")
+        .single();
+
+      if (createError) {
+        console.error("Failed to create conversation:", createError);
+        return NextResponse.json(
+          { error: "Failed to create conversation" },
+          { status: 500 }
+        );
+      }
+
+      actualConversationId = newConversation.id;
+    } else if (conversationId) {
+      // Verify user owns this conversation
+      const { data: existingConversation, error: fetchError } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("id", conversationId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (fetchError || !existingConversation) {
+        return NextResponse.json(
+          { error: "Conversation not found" },
+          { status: 404 }
+        );
+      }
+    }
+
+    // Save user message
+    const { data: savedUserMessage, error: userMsgError } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: actualConversationId,
+        role: "user",
+        content: message,
+      })
+      .select("id, role, content")
+      .single();
+
+    if (userMsgError) {
+      console.error("Failed to save user message:", userMsgError);
+      return NextResponse.json(
+        { error: "Failed to save message" },
+        { status: 500 }
+      );
+    }
+
+    // Build messages array for LLM
+    const llmMessages: OpenRouterMessage[] = [
       {
         role: "system",
         content: character.systemPrompt,
@@ -92,7 +165,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           model: model ?? DEFAULT_MODEL,
-          messages,
+          messages: llmMessages,
         }),
       }
     );
@@ -113,18 +186,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: data.error.message }, { status: 500 });
     }
 
-    const assistantMessage = data.choices[0]?.message?.content;
+    const assistantContent = data.choices[0]?.message?.content;
 
-    if (!assistantMessage) {
+    if (!assistantContent) {
       return NextResponse.json(
         { error: "No response from AI" },
         { status: 500 }
       );
     }
 
+    // Save assistant message
+    const { data: savedAssistantMessage, error: assistantMsgError } =
+      await supabase
+        .from("messages")
+        .insert({
+          conversation_id: actualConversationId,
+          role: "assistant",
+          content: assistantContent,
+        })
+        .select("id, role, content")
+        .single();
+
+    if (assistantMsgError) {
+      console.error("Failed to save assistant message:", assistantMsgError);
+      return NextResponse.json(
+        { error: "Failed to save response" },
+        { status: 500 }
+      );
+    }
+
+    // Update conversation's updated_at
+    await supabase
+      .from("conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", actualConversationId);
+
     return NextResponse.json({
-      role: "assistant",
-      content: assistantMessage,
+      conversationId: actualConversationId,
+      userMessage: savedUserMessage,
+      assistantMessage: savedAssistantMessage,
     });
   } catch (error) {
     console.error("Chat API error:", error);
