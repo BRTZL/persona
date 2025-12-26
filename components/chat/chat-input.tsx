@@ -19,6 +19,7 @@ type ChatInputProps = {
   onStop: () => void;
   isLoading: boolean;
   isStreaming: boolean;
+  isRateLimited?: boolean;
   character: Character | null;
   selectedModel: Model;
   onModelChange: (model: Model) => void;
@@ -34,18 +35,24 @@ export function ChatInput({
   onStop,
   isLoading,
   isStreaming,
+  isRateLimited = false,
   character,
   selectedModel,
   onModelChange,
   showCharacterSelector = false,
   onCharacterSelect,
 }: ChatInputProps) {
-  const placeholder = character
-    ? `Message ${character.name}...`
-    : "Select a persona to start...";
+  const placeholder = isRateLimited
+    ? "Daily message limit reached"
+    : character
+      ? `Message ${character.name}...`
+      : "Select a persona to start...";
 
   const isSubmitDisabled =
-    !input.trim() || (showCharacterSelector && !character) || isLoading;
+    !input.trim() ||
+    (showCharacterSelector && !character) ||
+    isLoading ||
+    isRateLimited;
 
   return (
     <div className="bg-background z-10 shrink-0 px-3 pb-3 md:px-5 md:pb-5">

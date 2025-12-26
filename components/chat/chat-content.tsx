@@ -6,12 +6,14 @@ import { ChatHeader } from "@/components/chat/chat-header";
 import { ChatInput } from "@/components/chat/chat-input";
 import { ChatMessages } from "@/components/chat/chat-messages";
 import { ChatWelcome } from "@/components/chat/chat-welcome";
+import { UsageBanner } from "@/components/chat/usage-banner";
 import { useChatSession } from "@/hooks/use-chat-session";
 import { useClipboard } from "@/hooks/use-clipboard";
 import type { Character } from "@/lib/characters";
 import { getCharacter } from "@/lib/characters";
 import { DEFAULT_MODEL, type Model } from "@/lib/models";
 import type { Message as DbMessage } from "@/queries";
+import { useUsage } from "@/queries";
 
 type ChatContentProps = {
   /** Character for the chat - if undefined, shows character selector */
@@ -166,6 +168,10 @@ export function ChatContent({
   // Use clipboard hook for copy functionality
   const { copy } = useClipboard();
 
+  // Check usage limits
+  const { data: usage } = useUsage();
+  const isRateLimited = usage?.remaining === 0;
+
   // Auto-send message if provided (from URL params)
   useEffect(() => {
     if (
@@ -227,6 +233,12 @@ export function ChatContent({
         />
       )}
 
+      <div className="bg-background shrink-0 space-y-2 px-3 pb-3 md:px-5 md:pb-5">
+        <div className="mx-auto max-w-3xl">
+          <UsageBanner />
+        </div>
+      </div>
+
       <ChatInput
         input={input}
         onInputChange={setInput}
@@ -234,6 +246,7 @@ export function ChatContent({
         onStop={stop}
         isLoading={isLoading}
         isStreaming={isStreaming}
+        isRateLimited={isRateLimited}
         character={selectedCharacter}
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
