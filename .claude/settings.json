@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "mcp__chrome-devtools",
+      "mcp__plugin_context7_context7",
+      "mcp__task-master-ai",
+      "WebSearch",
+      "WebFetch(domain:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm check"
+          },
+          {
+            "type": "command",
+            "command": "pnpm check-types"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "open \"raycast://extensions/raycast/raycast/confetti\""
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|idle_prompt|auth_success|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "open \"raycast://extensions/raycast/raycast/confetti?emojis=⁉️\""
+          }
+        ]
+      }
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "alwaysThinkingEnabled": true,
+  "includeCoAuthoredBy": false,
+  "spinnerTipsEnabled": true
+}

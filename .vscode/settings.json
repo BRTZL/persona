@@ -1,0 +1,52 @@
+{
+  // i18n Configuration
+  "i18n-ally.displayLanguage": "en",
+  "i18n-ally.localesPaths": ["packages/i18n/locales"],
+  "i18n-ally.namespace": true,
+  "i18n-ally.pathMatcher": "{locale}/{namespace}.json",
+  "i18n-ally.enabledParsers": ["json"],
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.sourceLanguage": "en",
+  "i18n-ally.sortKeys": true,
+  "i18n-ally.keepFulfilled": true,
+  "i18n-ally.enabledFrameworks": ["next-intl"],
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": false,
+  "[markdown]": {
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+  },
+  // Disable conflicting extensions
+  "prettier.enable": true,
+  "eslint.enable": true,
+  // TypeScript settings
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  // General editor settings
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  // File associations
+  "files.associations": {
+    "*.json": "jsonc"
+  },
+
+  "explorer.fileNesting.patterns": {
+    ".env.example": ".env.*",
+    "package.json": "pnpm-lock.yaml, tsconfig.json, next.config.ts, postcss.config.mjs, eslint.config.mjs"
+  },
+  "files.exclude": {
+    "**/.next": true,
+    "**/.turbo": true,
+    "**/dist": true,
+    "**/node_modules": true,
+    "**/.pnpm-store": true,
+    "**/.temp": true,
+    "next-env.d.ts": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
+}
