@@ -41,6 +41,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      favorite_characters: {
+        Row: {
+          character_slug: string;
+          created_at: string | null;
+          id: string;
+          user_id: string;
+        };
+        Insert: {
+          character_slug: string;
+          created_at?: string | null;
+          id?: string;
+          user_id: string;
+        };
+        Update: {
+          character_slug?: string;
+          created_at?: string | null;
+          id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       messages: {
         Row: {
           content: string;

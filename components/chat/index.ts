@@ -1,3 +1,10 @@
 export { ChatContent } from "./chat-content";
 export { ChatContentSkeleton } from "./chat-content-skeleton";
+export { ChatHeader } from "./chat-header";
+export { ChatInput } from "./chat-input";
+export { ChatMessages } from "./chat-messages";
 export { ChatSidebar } from "./chat-sidebar";
+export { ChatWelcome } from "./chat-welcome";
+export { CharacterSelector } from "./character-selector";
+export { ModelSelector } from "./model-selector";
+export { ThinkingIndicator } from "./thinking-indicator";

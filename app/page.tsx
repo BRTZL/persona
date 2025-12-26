@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, MessageCircle, Sparkles } from "lucide-react";
+import { CharacterAvatar } from "@/components/character-avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getAllCharacters } from "@/lib/characters";
@@ -38,7 +38,7 @@ function Header() {
             <div className="bg-muted h-8 w-24 animate-pulse rounded-md" />
           ) : user ? (
             <Button asChild size="lg" className="gap-2">
-              <Link href="/chat/new/luna">
+              <Link href="/chat">
                 Open App
                 <ArrowRight className="size-4" />
               </Link>
@@ -140,7 +140,7 @@ function HeroSection() {
         <div className="animate-fade-up stagger-3 flex flex-col items-center justify-center gap-4 sm:flex-row">
           {user ? (
             <Button asChild size="lg" className="glow gap-2 px-8">
-              <Link href="/chat/new/luna">
+              <Link href="/chat">
                 Start Chatting
                 <ArrowRight className="size-4" />
               </Link>
@@ -175,7 +175,7 @@ function HeroSection() {
       <div className="animate-fade-in stagger-4 absolute bottom-8 left-1/2 -translate-x-1/2">
         <div className="text-muted-foreground flex flex-col items-center gap-2">
           <span className="text-xs tracking-widest uppercase">Scroll</span>
-          <div className="from-muted-foreground/50 h-8 w-px bg-gradient-to-b to-transparent" />
+          <div className="from-muted-foreground/50 h-8 w-px bg-linear-to-b to-transparent" />
         </div>
       </div>
     </section>
@@ -190,25 +190,19 @@ function CharacterCard({
   index: number;
 }) {
   return (
-    <Link href={`/chat/new/${character.slug}`}>
+    <Link href={`/chat?character=${character.slug}`}>
       <Card
         className={`character-card animate-scale-in group border-border/50 bg-card/50 relative h-full cursor-pointer overflow-hidden p-0 backdrop-blur-sm ${STAGGER_CLASSES[index]}`}
       >
         {/* Hover glow effect */}
-        <div className="from-primary/5 pointer-events-none absolute inset-0 rounded-lg bg-gradient-to-br via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+        <div className="from-primary/5 pointer-events-none absolute inset-0 rounded-lg bg-linear-to-br via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
         <div className="relative flex flex-col p-5">
           {/* Avatar and name */}
           <div className="mb-4 flex items-start gap-4">
             <div className="relative shrink-0">
-              <div className="ring-border/50 ring-offset-background group-hover:ring-primary/50 size-16 overflow-hidden rounded-full ring-2 ring-offset-2 transition-all duration-300">
-                <Image
-                  src={character.avatarUrl}
-                  alt={character.name}
-                  width={64}
-                  height={64}
-                  className="size-full object-cover"
-                />
+              <div className="ring-border/50 ring-offset-background group-hover:ring-primary/50 rounded-full ring-2 ring-offset-2 transition-all duration-300">
+                <CharacterAvatar slug={character.slug} size="xl" />
               </div>
             </div>
             <div className="min-w-0 flex-1">

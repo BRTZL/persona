@@ -9,7 +9,7 @@ import {
   ChatSidebar,
 } from "@/components/chat";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { getCharacter, getDefaultCharacter } from "@/lib/characters";
+import { getCharacter } from "@/lib/characters";
 import { conversationQueryOptions } from "@/queries";
 
 export default function ConversationPage({
@@ -22,17 +22,16 @@ export default function ConversationPage({
     conversationQueryOptions(id)
   );
 
-  // Get character from conversation or use default for loading state
+  // Get character from conversation
   const character = conversation
     ? getCharacter(conversation.character_slug)
     : null;
 
-  // Show skeleton while loading - sidebar and shell are always visible
+  // Show skeleton while loading
   if (isLoading || !conversation) {
-    const defaultCharacter = getDefaultCharacter();
     return (
       <SidebarProvider>
-        <ChatSidebar character={defaultCharacter} currentConversationId={id} />
+        <ChatSidebar currentConversationId={id} />
         <SidebarInset>
           <ChatContentSkeleton />
         </SidebarInset>
@@ -46,7 +45,7 @@ export default function ConversationPage({
 
   return (
     <SidebarProvider>
-      <ChatSidebar character={character} currentConversationId={id} />
+      <ChatSidebar currentConversationId={id} />
       <SidebarInset>
         <ChatContent
           character={character}

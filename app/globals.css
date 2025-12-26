@@ -195,6 +195,22 @@
   animation: float 6s ease-in-out infinite;
 }
 
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translate(-50%, 0) scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translate(-50%, 0) scale(1.1);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
 /* Stagger delays for grid items */
 .stagger-1 {
   animation-delay: 0.1s;

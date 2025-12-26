@@ -17,10 +17,19 @@ const openrouter = createOpenRouter({
 });
 
 // Accept messages array from useChat TextStreamChatTransport
-const MessagePartSchema = z.object({
+// Parts can be text, step-start, tool-call, etc. - we only care about text parts
+const TextPartSchema = z.object({
   type: z.literal("text"),
   text: z.string(),
 });
+
+const OtherPartSchema = z
+  .object({
+    type: z.string(),
+  })
+  .passthrough();
+
+const MessagePartSchema = z.union([TextPartSchema, OtherPartSchema]);
 
 const UIMessageSchema = z.object({
   id: z.string(),
@@ -31,14 +40,14 @@ const UIMessageSchema = z.object({
 const ChatRequestSchema = z.object({
   messages: z.array(UIMessageSchema),
   characterSlug: z.string(),
-  conversationId: z.uuid().optional(),
-  model: z.enum(VALID_MODEL_IDS).optional(),
+  conversationId: z.uuid().nullish(), // accepts null, undefined, or valid UUID
+  model: z.enum(VALID_MODEL_IDS).nullish(),
 });
 
-// Extract text content from UI message parts
+// Extract text content from UI message parts (only text parts)
 function getMessageText(parts: z.infer<typeof MessagePartSchema>[]): string {
   return parts
-    .filter((p) => p.type === "text")
+    .filter((p): p is z.infer<typeof TextPartSchema> => p.type === "text")
     .map((p) => p.text)
     .join("");
 }
@@ -67,7 +76,14 @@ export async function POST(request: Request) {
   const parsed = ChatRequestSchema.safeParse(body);
 
   if (!parsed.success) {
-    return new Response("Invalid request body", { status: 400 });
+    console.error("Chat API validation error:", parsed.error.format());
+    return new Response(
+      JSON.stringify({
+        error: "Invalid request body",
+        details: parsed.error.format(),
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   const {
@@ -150,7 +166,7 @@ export async function POST(request: Request) {
     system: character.systemPrompt,
     messages,
     experimental_transform: smoothStream({
-      delayInMs: 10,
+      delayInMs: 5,
       chunking: "word",
     }),
     onFinish: async ({ text }: { text: string }) => {

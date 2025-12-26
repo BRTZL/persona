@@ -100,3 +100,29 @@ export function useUpdateConversationTitle() {
     },
   });
 }
+
+// Delete conversation (messages cascade automatically)
+export function useDeleteConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      const supabase = createClient();
+
+      const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", conversationId);
+
+      if (error) {
+        throw error;
+      }
+    },
+    onSuccess: (_, conversationId) => {
+      queryClient.removeQueries({
+        queryKey: chatKeys.conversation(conversationId),
+      });
+      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+    },
+  });
+}

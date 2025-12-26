@@ -27,7 +27,7 @@ export function useLogout() {
       if (error) {
         throw error;
       }
-      window.location.href = "/login";
+      window.location.href = "/";
     },
   });
 }
