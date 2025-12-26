@@ -205,7 +205,7 @@ export function ChatContent({
   const showCharacterSelector = !characterProp && !hasStartedChat;
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden">
+    <main className="flex h-dvh flex-col overflow-hidden">
       <ChatHeader
         character={selectedCharacter}
         hasStartedChat={hasStartedChat}

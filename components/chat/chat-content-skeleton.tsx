@@ -28,7 +28,7 @@ function MessageSkeleton({ isUser }: { isUser: boolean }) {
 
 export function ChatContentSkeleton() {
   return (
-    <main className="flex h-screen flex-col overflow-hidden">
+    <main className="flex h-dvh flex-col overflow-hidden">
       {/* Header skeleton */}
       <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-3 border-b px-4">
         <SidebarTrigger className="-ml-1" />
