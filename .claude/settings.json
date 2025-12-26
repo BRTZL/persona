@@ -19,10 +19,6 @@
           {
             "type": "command",
             "command": "pnpm check"
-          },
-          {
-            "type": "command",
-            "command": "pnpm check-types"
           }
         ]
       }

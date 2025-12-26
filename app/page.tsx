@@ -1,5 +1,21 @@
 "use client";
 
+import { useRef, useState } from "react";
+import {
+  ArrowUp,
+  Copy,
+  Globe,
+  Mic,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  PlusIcon,
+  Search,
+  ThumbsDown,
+  ThumbsUp,
+  Trash,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   ChatContainerContent,
   ChatContainerRoot,
@@ -17,7 +33,6 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { ScrollButton } from "@/components/ui/scroll-button";
-import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -31,21 +46,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import {
-  ArrowUp,
-  Copy,
-  Globe,
-  Mic,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  PlusIcon,
-  Search,
-  ThumbsDown,
-  ThumbsUp,
-  Trash,
-} from "lucide-react";
-import { useRef, useState } from "react";
 
 // Initial conversation history
 const conversationHistory = [

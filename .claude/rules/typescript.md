@@ -68,7 +68,7 @@ Use `interface` only when you need declaration merging (rare):
 // ✅ Only for module augmentation
 declare module "some-library" {
   interface SomeType {
-    newProperty: string
+    newProperty: string;
   }
 }
 ```
@@ -82,16 +82,18 @@ Use discriminated unions with switch statements for type-safe branching:
 type Message =
   | { type: "user"; content: string }
   | { type: "assistant"; content: string; model: string }
-  | { type: "system"; content: string }
+  | { type: "system"; content: string };
 
 function renderMessage(message: Message) {
   switch (message.type) {
     case "user":
-      return <UserMessage content={message.content} />
+      return <UserMessage content={message.content} />;
     case "assistant":
-      return <AssistantMessage content={message.content} model={message.model} />
+      return (
+        <AssistantMessage content={message.content} model={message.model} />
+      );
     case "system":
-      return <SystemMessage content={message.content} />
+      return <SystemMessage content={message.content} />;
   }
 }
 ```
@@ -158,13 +160,17 @@ Always specify return types for non-trivial functions:
 ```tsx
 // ✅ Explicit return type
 function calculateTotal(items: CartItem[]): number {
-  return items.reduce((sum, item) => sum + item.price, 0)
+  return items.reduce((sum, item) => sum + item.price, 0);
 }
 
 // ✅ Async return type
 async function fetchCharacter(slug: string): Promise<Character> {
-  const { data } = await supabase.from("characters").select("*").eq("slug", slug).single()
-  return data
+  const { data } = await supabase
+    .from("characters")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+  return data;
 }
 ```
 
@@ -172,8 +178,8 @@ async function fetchCharacter(slug: string): Promise<Character> {
 
 ```tsx
 // ✅ Typed callbacks
-type OnSendCallback = (content: string) => void
-type OnErrorCallback = (error: Error) => void
+type OnSendCallback = (content: string) => void;
+type OnErrorCallback = (error: Error) => void;
 
 function ChatInput({ onSend }: { onSend: OnSendCallback }) {
   // ...
@@ -186,22 +192,27 @@ Use generics for reusable utilities:
 
 ```tsx
 // ✅ Generic response wrapper
-type ApiResponse<T> = {
-  data: T
-  error: null
-} | {
-  data: null
-  error: string
-}
+type ApiResponse<T> =
+  | {
+      data: T;
+      error: null;
+    }
+  | {
+      data: null;
+      error: string;
+    };
 
 // ✅ Usage
 async function fetchData<T>(url: string): Promise<ApiResponse<T>> {
   try {
-    const response = await fetch(url)
-    const data = await response.json()
-    return { data, error: null }
+    const response = await fetch(url);
+    const data = await response.json();
+    return { data, error: null };
   } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : "Unknown error" }
+    return {
+      data: null,
+      error: e instanceof Error ? e.message : "Unknown error",
+    };
   }
 }
 ```
@@ -212,21 +223,20 @@ Use `type` imports for type-only imports:
 
 ```tsx
 // ✅ Type-only imports
-import type { Character } from "@/queries"
-import type { Tables } from "@/generated/database.types"
-
 // ✅ Mixed imports
-import { queryOptions, type QueryKey } from "@tanstack/react-query"
+import { type QueryKey, queryOptions } from "@tanstack/react-query";
+import type { Tables } from "@/generated/database.types";
+import type { Character } from "@/queries";
 ```
 
 ## Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Types | PascalCase | `CharacterProps` |
-| Type parameters | Single uppercase | `T`, `K`, `V` |
-| Enums | PascalCase | `MessageRole` |
-| Constants | SCREAMING_SNAKE_CASE | `MAX_MESSAGE_LENGTH` |
+| Type            | Convention           | Example              |
+| --------------- | -------------------- | -------------------- |
+| Types           | PascalCase           | `CharacterProps`     |
+| Type parameters | Single uppercase     | `T`, `K`, `V`        |
+| Enums           | PascalCase           | `MessageRole`        |
+| Constants       | SCREAMING_SNAKE_CASE | `MAX_MESSAGE_LENGTH` |
 
 ## Type Checking
 
