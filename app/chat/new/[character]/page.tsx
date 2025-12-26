@@ -159,9 +159,10 @@ function ChatContent({ character }: { character: Character }) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!prompt.trim()) return;
 
+    const userMessage = prompt.trim();
     setPrompt("");
     setIsLoading(true);
 
@@ -169,22 +170,52 @@ function ChatContent({ character }: { character: Character }) {
     const newUserMessage: ChatMessage = {
       id: chatMessages.length + 1,
       role: "user",
-      content: prompt.trim(),
+      content: userMessage,
     };
 
-    setChatMessages([...chatMessages, newUserMessage]);
+    const updatedMessages = [...chatMessages, newUserMessage];
+    setChatMessages(updatedMessages);
 
-    // TODO: Phase 3 - Replace with actual API call
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          characterSlug: character.slug,
+          history: updatedMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response");
+      }
+
+      const data = (await response.json()) as { role: string; content: string };
+
       const assistantResponse: ChatMessage = {
-        id: chatMessages.length + 2,
+        id: updatedMessages.length + 1,
         role: "assistant",
-        content: `[${character.name}]: This is a placeholder response. In Phase 2, this will be replaced with real AI responses.`,
+        content: data.content,
       };
 
       setChatMessages((prev) => [...prev, assistantResponse]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorMessage: ChatMessage = {
+        id: updatedMessages.length + 1,
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+      };
+      setChatMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
