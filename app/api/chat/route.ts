@@ -72,21 +72,26 @@ export async function POST(request: Request) {
   }
 
   // 2. Check rate limit before processing
-  type UsageResult = {
-    message_count: number;
-    daily_limit: number;
-    remaining: number;
-  };
-
-  const { data: usageData, error: usageError } = (await supabase.rpc(
-    "get_daily_message_usage" as never,
-    { p_user_id: user.id } as never
-  )) as { data: UsageResult[] | null; error: Error | null };
+  const { data: usageData, error: usageError } = await supabase.rpc(
+    "get_daily_message_usage",
+    { p_user_id: user.id }
+  );
 
   if (usageError) {
     console.error("Rate limit check error:", usageError);
-    // Continue without rate limiting if there's an error
-  } else if (usageData && usageData.length > 0) {
+    return new Response(
+      JSON.stringify({
+        error: "Unable to verify usage limits",
+        message: "Please try again later",
+      }),
+      {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  if (usageData && usageData.length > 0) {
     const usage = usageData[0];
     if (usage.remaining <= 0) {
       return new Response(
@@ -193,21 +198,7 @@ export async function POST(request: Request) {
     return new Response("Failed to save message", { status: 500 });
   }
 
-  // 7. Increment daily message count (fire and forget - don't block on this)
-  supabase
-    .rpc(
-      "increment_daily_message_count" as never,
-      {
-        p_user_id: user.id,
-      } as never
-    )
-    .then(({ error }: { error: Error | null }) => {
-      if (error) {
-        console.error("Failed to increment message count:", error);
-      }
-    });
-
-  // 8. Stream response with AI SDK
+  // 7. Stream response with AI SDK
   const result = streamText({
     model: openrouter(selectedModel),
     system: character.systemPrompt,

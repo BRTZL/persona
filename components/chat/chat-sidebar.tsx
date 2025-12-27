@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import {
   MessageSquare,
   PlusIcon,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { UsageIndicator } from "@/components/chat/usage-indicator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -93,11 +94,15 @@ function groupConversationsByDate(
 export function ChatSidebar({ currentConversationId }: ChatSidebarProps) {
   const router = useRouter();
   const allCharacters = getAllCharacters();
-  const { data: conversations = [], isLoading: isConversationsLoading } =
+  const isRestoring = useIsRestoring();
+  const { data: conversations = [], isPending: isConversationsPending } =
     useQuery(conversationsQueryOptions());
   const { data: user } = useUser();
   const { favorites, isLoading: isFavoritesLoading } = useFavoriteCharacters();
   const deleteConversation = useDeleteConversation();
+
+  // Show loading state when either fetching OR restoring cache
+  const isConversationsLoading = isConversationsPending || isRestoring;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<{
     id: string;
@@ -265,18 +270,21 @@ export function ChatSidebar({ currentConversationId }: ChatSidebarProps) {
           ))
         )}
       </SidebarContent>
-      <SidebarFooter className="border-t p-2">
-        <SidebarMenuButton asChild>
-          <Link href="/settings/profile" className="flex items-center gap-2">
-            <div className="bg-primary/10 flex size-6 shrink-0 items-center justify-center rounded-full">
-              <span className="text-primary text-xs font-medium">
-                {avatarInitial}
-              </span>
-            </div>
-            <span className="flex-1 truncate text-sm">{displayName}</span>
-            <Settings className="text-muted-foreground size-4" />
-          </Link>
-        </SidebarMenuButton>
+      <SidebarFooter className="border-t">
+        <UsageIndicator variant="sidebar" />
+        <div className="p-2 pt-0">
+          <SidebarMenuButton asChild>
+            <Link href="/settings/profile" className="flex items-center gap-2">
+              <div className="bg-primary/10 flex size-6 shrink-0 items-center justify-center rounded-full">
+                <span className="text-primary text-xs font-medium">
+                  {avatarInitial}
+                </span>
+              </div>
+              <span className="flex-1 truncate text-sm">{displayName}</span>
+              <Settings className="text-muted-foreground size-4" />
+            </Link>
+          </SidebarMenuButton>
+        </div>
       </SidebarFooter>
 
       {/* Delete confirmation dialog */}

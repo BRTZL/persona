@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { useTheme } from "next-themes";
-import { Check, Laptop, LogOut, Mail, Moon, Sun, User } from "lucide-react";
+import {
+  Check,
+  Laptop,
+  LogOut,
+  Mail,
+  MessageCircle,
+  Moon,
+  Sun,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
 import { Button } from "@/components/ui/button";
@@ -15,11 +24,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   useSignOutOtherSessions,
   useUpdateDisplayName,
+  useUsageStats,
   useUser,
 } from "@/queries";
 
@@ -59,6 +71,7 @@ export default function ProfileSettingsPage() {
 
   const updateDisplayName = useUpdateDisplayName();
   const signOutOtherSessions = useSignOutOtherSessions();
+  const { data: usageStats, isLoading: isUsageLoading } = useUsageStats();
 
   const handleSaveDisplayName = () => {
     if (!displayName.trim()) {
@@ -156,6 +169,81 @@ export default function ProfileSettingsPage() {
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Usage Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <div className="bg-primary/10 flex size-8 items-center justify-center rounded-lg">
+                    <MessageCircle className="text-primary size-4" />
+                  </div>
+                  <div>
+                    <CardTitle>Usage</CardTitle>
+                    <CardDescription>
+                      Your message usage statistics
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isUsageLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ) : usageStats ? (
+                  <div className="space-y-4">
+                    {/* Today's Usage */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Today</span>
+                        <span className="font-medium">
+                          {usageStats.today_count} / {usageStats.daily_limit}{" "}
+                          messages
+                        </span>
+                      </div>
+                      <Progress
+                        value={
+                          (usageStats.today_count / usageStats.daily_limit) *
+                          100
+                        }
+                        className="h-2"
+                      />
+                    </div>
+
+                    {/* Weekly & Monthly Stats */}
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                          Last 7 days
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold">
+                          {usageStats.week_count}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          messages sent
+                        </p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                          Last 30 days
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold">
+                          {usageStats.month_count}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          messages sent
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="text-muted-foreground text-xs">
+                      Daily limit resets at midnight UTC
+                    </p>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
 

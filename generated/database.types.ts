@@ -62,6 +62,35 @@ export type Database = {
         };
         Relationships: [];
       };
+      message_usage_log: {
+        Row: {
+          created_at: string;
+          id: string;
+          message_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          message_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          message_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "message_usage_log_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       messages: {
         Row: {
           content: string;
@@ -99,7 +128,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      get_daily_message_usage: {
+        Args: { p_user_id: string };
+        Returns: {
+          daily_limit: number;
+          message_count: number;
+          remaining: number;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

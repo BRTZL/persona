@@ -6,12 +6,6 @@ export type UsageResponse = {
   remaining: number;
 };
 
-type UsageResult = {
-  message_count: number;
-  daily_limit: number;
-  remaining: number;
-};
-
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -22,12 +16,9 @@ export async function GET() {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { data, error } = (await supabase.rpc(
-    "get_daily_message_usage" as never,
-    {
-      p_user_id: user.id,
-    } as never
-  )) as { data: UsageResult[] | null; error: Error | null };
+  const { data, error } = await supabase.rpc("get_daily_message_usage", {
+    p_user_id: user.id,
+  });
 
   if (error) {
     console.error("Failed to get usage:", error);

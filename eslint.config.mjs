@@ -13,6 +13,18 @@ const eslintConfig = defineConfig([
       // Disallow any type
       "@typescript-eslint/no-explicit-any": "error",
 
+      // Disallow unsafe type assertions (as any, as never, as unknown)
+      "@typescript-eslint/consistent-type-assertions": [
+        "error",
+        {
+          assertionStyle: "as",
+          objectLiteralTypeAssertions: "never",
+        },
+      ],
+
+      // Disallow non-null assertions (!)
+      "@typescript-eslint/no-non-null-assertion": "error",
+
       // Prefer type over interface
       "@typescript-eslint/consistent-type-definitions": ["error", "type"],
 
@@ -47,6 +59,14 @@ const eslintConfig = defineConfig([
       // Import rules
       "import/order": "off", // Handled by Prettier plugin
       "import/no-duplicates": "error",
+    },
+  },
+
+  // Relax rules for generated UI components (shadcn)
+  {
+    files: ["components/ui/**/*.tsx"],
+    rules: {
+      "@typescript-eslint/consistent-type-assertions": "off",
     },
   },
 

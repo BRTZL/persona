@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useIsRestoring,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type { CharacterSlug } from "@/lib/characters";
 import { createClient } from "@/lib/supabase/client";
 
@@ -67,12 +72,17 @@ export const favoriteCharactersQueryOptions = {
     return data.map((f) => f.character_slug as CharacterSlug);
   },
   staleTime: 1000 * 60 * 5, // 5 minutes
+  gcTime: 1000 * 60 * 60 * 24, // 24 hours - keep in cache for persistence
 };
 
 export function useFavoriteCharacters() {
-  const { data: favorites = [], isLoading } = useQuery(
+  const { data: favorites = [], isPending } = useQuery(
     favoriteCharactersQueryOptions
   );
+  const isRestoring = useIsRestoring();
+
+  // Show loading state when either fetching OR restoring cache
+  const isLoading = isPending || isRestoring;
 
   return {
     favorites,

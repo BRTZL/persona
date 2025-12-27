@@ -6,7 +6,6 @@ import { ChatHeader } from "@/components/chat/chat-header";
 import { ChatInput } from "@/components/chat/chat-input";
 import { ChatMessages } from "@/components/chat/chat-messages";
 import { ChatWelcome } from "@/components/chat/chat-welcome";
-import { UsageBanner } from "@/components/chat/usage-banner";
 import { useChatSession } from "@/hooks/use-chat-session";
 import { useClipboard } from "@/hooks/use-clipboard";
 import type { Character } from "@/lib/characters";
@@ -232,12 +231,6 @@ export function ChatContent({
           onCopy={copy}
         />
       )}
-
-      <div className="bg-background shrink-0 space-y-2 px-3 pb-3 md:px-5 md:pb-5">
-        <div className="mx-auto max-w-3xl">
-          <UsageBanner />
-        </div>
-      </div>
 
       <ChatInput
         input={input}
