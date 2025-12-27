@@ -26,6 +26,25 @@ export function useCompleteOnboarding() {
   });
 }
 
+export function useResetOnboarding() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        data: { onboarding_completed: false },
+      });
+      if (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
+}
+
 export function useUpdateDisplayName() {
   const queryClient = useQueryClient();
 

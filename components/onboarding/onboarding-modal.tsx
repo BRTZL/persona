@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
-  Command,
   MessageCircle,
   Moon,
+  Search,
   Sparkles,
   Star,
+  Sun,
 } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { Button } from "@/components/ui/button";
@@ -18,12 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Kbd } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
 import { useCompleteOnboarding, useUser } from "@/queries";
 
-type OnboardingStep = 0 | 1 | 2;
+type OnboardingStep = 0 | 1 | 2 | 3 | 4;
 
-const FEATURED_PERSONAS = [
+const ALL_PERSONAS = [
   {
     slug: "luna",
     name: "Luna",
@@ -37,6 +39,12 @@ const FEATURED_PERSONAS = [
     color: "from-blue-500/20 to-cyan-500/20",
   },
   {
+    slug: "atlas",
+    name: "Atlas",
+    tagline: "Knowledge polymath",
+    color: "from-indigo-500/20 to-blue-500/20",
+  },
+  {
     slug: "spark",
     name: "Spark",
     tagline: "Creative muse",
@@ -48,13 +56,27 @@ const FEATURED_PERSONAS = [
     tagline: "Mindful guide",
     color: "from-emerald-500/20 to-teal-500/20",
   },
+  {
+    slug: "blaze",
+    name: "Blaze",
+    tagline: "Elite trainer",
+    color: "from-red-500/20 to-orange-500/20",
+  },
+  {
+    slug: "echo",
+    name: "Echo",
+    tagline: "Sharp thinker",
+    color: "from-slate-500/20 to-zinc-500/20",
+  },
+  {
+    slug: "pixel",
+    name: "Pixel",
+    tagline: "Game designer",
+    color: "from-pink-500/20 to-fuchsia-500/20",
+  },
 ] as const;
 
-const TIPS = [
-  { icon: Command, text: "⌘K for quick actions" },
-  { icon: Star, text: "Star your favorites" },
-  { icon: Moon, text: "Theme in settings" },
-] as const;
+const TOTAL_STEPS = 5;
 
 export function useOnboarding() {
   const { data: user, isLoading } = useUser();
@@ -88,7 +110,7 @@ export function OnboardingModal() {
   }, [showOnboarding]);
 
   const handleNext = useCallback(() => {
-    if (step < 2) {
+    if (step < TOTAL_STEPS - 1) {
       setIsTransitioning(true);
       setTimeout(() => {
         setStep((s) => (s + 1) as OnboardingStep);
@@ -103,11 +125,14 @@ export function OnboardingModal() {
     <Dialog open={showOnboarding}>
       <DialogContent
         showCloseButton={false}
-        className="overflow-hidden p-0 sm:max-w-lg"
+        className={cn(
+          "overflow-hidden p-0 transition-all duration-300",
+          step === 1 ? "sm:max-w-2xl" : "sm:max-w-lg"
+        )}
       >
         {/* Progress indicator */}
         <div className="absolute top-4 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
-          {[0, 1, 2].map((i) => (
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
               key={i}
               className={cn(
@@ -131,7 +156,9 @@ export function OnboardingModal() {
         >
           {step === 0 && <WelcomeStep onNext={handleNext} />}
           {step === 1 && <PersonasStep onNext={handleNext} />}
-          {step === 2 && (
+          {step === 2 && <SearchStep onNext={handleNext} />}
+          {step === 3 && <CustomizeStep onNext={handleNext} />}
+          {step === 4 && (
             <ReadyStep onComplete={handleNext} isCompleting={isCompleting} />
           )}
         </div>
@@ -160,15 +187,15 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
         <DialogTitle className="text-2xl font-semibold tracking-tight">
           Welcome to Persona
         </DialogTitle>
-        <DialogDescription className="mt-2 text-sm leading-relaxed">
-          Meet your AI companions, each with unique personalities and expertise.
-          They&apos;re here to help, inspire, and chat.
+        <DialogDescription className="mt-2 max-w-sm text-sm leading-relaxed">
+          More than just AI chat. Meet 8 unique AI companions, each with their
+          own personality, expertise, and perspective on the world.
         </DialogDescription>
       </DialogHeader>
 
       <div className="mt-8 flex justify-center">
         <Button onClick={onNext} size="lg" className="group gap-2 px-6">
-          Get Started
+          Discover Your Companions
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
         </Button>
       </div>
@@ -181,23 +208,24 @@ function PersonasStep({ onNext }: { onNext: () => void }) {
     <div className="px-6 pt-12 pb-6">
       <DialogHeader className="mb-6 text-center">
         <DialogTitle className="text-lg font-semibold">
-          Meet the Personas
+          8 Unique Companions
         </DialogTitle>
         <DialogDescription className="text-sm">
-          Each AI has a distinct personality. Pick one to start.
+          From code architects to creative muses. Each persona brings something
+          special.
         </DialogDescription>
       </DialogHeader>
 
-      <div className="grid grid-cols-2 gap-3">
-        {FEATURED_PERSONAS.map((persona, i) => (
+      <div className="grid grid-cols-4 gap-2">
+        {ALL_PERSONAS.map((persona, i) => (
           <div
             key={persona.slug}
             className={cn(
-              "group relative cursor-default overflow-hidden rounded-xl border p-4 transition-all",
+              "group relative cursor-default overflow-hidden rounded-xl border p-3 transition-all",
               "hover:border-primary/50 hover:shadow-md",
               "animate-fade-up"
             )}
-            style={{ animationDelay: `${i * 75}ms` }}
+            style={{ animationDelay: `${i * 50}ms` }}
           >
             {/* Gradient background on hover */}
             <div
@@ -208,23 +236,162 @@ function PersonasStep({ onNext }: { onNext: () => void }) {
             />
 
             <div className="relative flex flex-col items-center text-center">
-              <div className="ring-background mb-3 rounded-full ring-2 transition-transform group-hover:scale-105">
-                <CharacterAvatar slug={persona.slug} size="lg" />
+              <div className="ring-background mb-2 rounded-full ring-2 transition-transform group-hover:scale-105">
+                <CharacterAvatar slug={persona.slug} size="md" />
               </div>
-              <h3 className="font-medium">{persona.name}</h3>
-              <p className="text-muted-foreground text-xs">{persona.tagline}</p>
+              <h3 className="text-sm font-medium">{persona.name}</h3>
+              <p className="text-muted-foreground text-[10px]">
+                {persona.tagline}
+              </p>
             </div>
           </div>
         ))}
       </div>
 
-      <p className="text-muted-foreground mt-4 text-center text-xs">
-        + 4 more personas to discover
+      <div className="mt-6 flex justify-center">
+        <Button onClick={onNext} size="lg" className="group gap-2 px-6">
+          See What They Can Do
+          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SearchStep({ onNext }: { onNext: () => void }) {
+  return (
+    <div className="relative px-6 pt-12 pb-6">
+      {/* Background glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-10 left-1/2 size-48 -translate-x-1/2 rounded-full bg-gradient-to-br from-blue-500/10 to-cyan-500/10 blur-3xl" />
+      </div>
+
+      <DialogHeader className="relative mb-6 items-center text-center">
+        <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
+          <Search className="size-8 text-blue-600 dark:text-blue-400" />
+        </div>
+        <DialogTitle className="text-lg font-semibold">
+          Find Anything, Fast
+        </DialogTitle>
+        <DialogDescription className="text-sm">
+          Press the keyboard shortcut to instantly search characters and
+          conversations
+        </DialogDescription>
+      </DialogHeader>
+
+      {/* Keyboard shortcut display */}
+      <div
+        className="animate-fade-up mx-auto mb-6 flex max-w-xs items-center justify-center gap-2"
+        style={{ animationDelay: "100ms" }}
+      >
+        <Kbd className="text-base">
+          <span className="text-xs">⌘</span>
+        </Kbd>
+        <span className="text-muted-foreground text-sm">+</span>
+        <Kbd className="text-base">K</Kbd>
+      </div>
+
+      {/* Mock command palette preview */}
+      <div
+        className="bg-muted/50 animate-fade-up mx-auto max-w-xs overflow-hidden rounded-xl border"
+        style={{ animationDelay: "200ms" }}
+      >
+        <div className="border-b px-3 py-2">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs">
+            <Search className="size-3" />
+            <span>Search characters & conversations...</span>
+          </div>
+        </div>
+        <div className="divide-y">
+          <div className="flex items-center gap-2 px-3 py-2">
+            <CharacterAvatar slug="nova" size="xs" />
+            <span className="text-xs">Nova</span>
+            <span className="text-muted-foreground ml-auto text-[10px]">
+              Character
+            </span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2">
+            <CharacterAvatar slug="luna" size="xs" />
+            <span className="text-xs">Luna</span>
+            <span className="text-muted-foreground ml-auto text-[10px]">
+              Character
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <p
+        className="text-muted-foreground animate-fade-up mt-4 text-center text-xs"
+        style={{ animationDelay: "300ms" }}
+      >
+        Try it anytime - even after this tour!
       </p>
 
       <div className="mt-6 flex justify-center">
         <Button onClick={onNext} size="lg" className="group gap-2 px-6">
-          Next
+          Next: Customization
+          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function CustomizeStep({ onNext }: { onNext: () => void }) {
+  return (
+    <div className="relative px-6 pt-12 pb-6">
+      <DialogHeader className="relative mb-6 items-center text-center">
+        <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+          <Star className="size-8 text-amber-500" />
+        </div>
+        <DialogTitle className="text-lg font-semibold">
+          Make It Yours
+        </DialogTitle>
+        <DialogDescription className="text-sm">
+          Personalize your experience with favorites and themes
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-3">
+        {/* Favorites feature */}
+        <div
+          className="bg-muted/50 animate-fade-up flex items-center gap-4 rounded-lg px-4 py-3"
+          style={{ animationDelay: "100ms" }}
+        >
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+            <Star className="size-5 fill-amber-400 text-amber-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium">Star Your Favorites</h3>
+            <p className="text-muted-foreground text-xs">
+              Click the star on any character for quick access
+            </p>
+          </div>
+        </div>
+
+        {/* Theme feature */}
+        <div
+          className="bg-muted/50 animate-fade-up flex items-center gap-4 rounded-lg px-4 py-3"
+          style={{ animationDelay: "200ms" }}
+        >
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20">
+            <div className="relative">
+              <Sun className="text-primary size-5 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+              <Moon className="text-primary absolute top-0 left-0 size-5 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium">Choose Your Theme</h3>
+            <p className="text-muted-foreground text-xs">
+              Switch between light and dark mode in settings
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-center">
+        <Button onClick={onNext} size="lg" className="group gap-2 px-6">
+          Almost There!
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
         </Button>
       </div>
@@ -239,6 +406,13 @@ function ReadyStep({
   onComplete: () => void;
   isCompleting: boolean;
 }) {
+  const tips = [
+    { icon: Search, text: "⌘K to search" },
+    { icon: Star, text: "Star your favorites" },
+    { icon: Moon, text: "Theme in settings" },
+    { icon: MessageCircle, text: "Chat with any persona" },
+  ];
+
   return (
     <div className="relative px-6 pt-12 pb-6">
       {/* Celebration glow */}
@@ -252,29 +426,29 @@ function ReadyStep({
           <MessageCircle className="size-8 text-emerald-600 dark:text-emerald-400" />
         </div>
         <DialogTitle className="text-xl font-semibold">
-          You&apos;re all set!
+          You&apos;re All Set!
         </DialogTitle>
         <DialogDescription className="text-sm">
-          Here are some quick tips to get started
+          Quick reference for getting started
         </DialogDescription>
       </DialogHeader>
 
-      <div className="space-y-3">
-        {TIPS.map((tip, i) => {
+      <div className="grid grid-cols-2 gap-2">
+        {tips.map((tip, i) => {
           const Icon = tip.icon;
           return (
             <div
               key={i}
               className={cn(
-                "bg-muted/50 flex items-center gap-3 rounded-lg px-4 py-3",
+                "bg-muted/50 flex items-center gap-2 rounded-lg px-3 py-2.5",
                 "animate-fade-up"
               )}
-              style={{ animationDelay: `${i * 100}ms` }}
+              style={{ animationDelay: `${i * 75}ms` }}
             >
-              <div className="bg-background flex size-8 items-center justify-center rounded-md">
-                <Icon className="text-muted-foreground size-4" />
+              <div className="bg-background flex size-7 shrink-0 items-center justify-center rounded-md">
+                <Icon className="text-muted-foreground size-3.5" />
               </div>
-              <span className="text-sm">{tip.text}</span>
+              <span className="text-xs">{tip.text}</span>
             </div>
           );
         })}

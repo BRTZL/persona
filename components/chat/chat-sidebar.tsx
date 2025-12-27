@@ -38,6 +38,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCommandDialog } from "@/hooks/use-command-dialog";
 import { type CharacterSlug, getAllCharacters } from "@/lib/characters";
 import {
   conversationsQueryOptions,
@@ -93,6 +94,7 @@ function groupConversationsByDate(
 
 export function ChatSidebar({ currentConversationId }: ChatSidebarProps) {
   const router = useRouter();
+  const { setOpen: setCommandOpen } = useCommandDialog();
   const allCharacters = getAllCharacters();
   const isRestoring = useIsRestoring();
   const { data: conversations = [], isPending: isConversationsPending } =
@@ -162,7 +164,11 @@ export function ChatSidebar({ currentConversationId }: ChatSidebarProps) {
             Persona
           </div>
         </Link>
-        <Button variant="ghost" className="size-8">
+        <Button
+          variant="ghost"
+          className="size-8"
+          onClick={() => setCommandOpen(true)}
+        >
           <Search className="size-4" />
         </Button>
       </SidebarHeader>

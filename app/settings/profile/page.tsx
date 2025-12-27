@@ -9,6 +9,7 @@ import {
   Mail,
   MessageCircle,
   Moon,
+  RotateCcw,
   Sun,
   User,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
+  useResetOnboarding,
   useSignOutOtherSessions,
   useUpdateDisplayName,
   useUsageStats,
@@ -71,6 +73,7 @@ export default function ProfileSettingsPage() {
 
   const updateDisplayName = useUpdateDisplayName();
   const signOutOtherSessions = useSignOutOtherSessions();
+  const resetOnboarding = useResetOnboarding();
   const { data: usageStats, isLoading: isUsageLoading } = useUsageStats();
 
   const handleSaveDisplayName = () => {
@@ -95,6 +98,17 @@ export default function ProfileSettingsPage() {
       },
       onError: () => {
         toast.error("Failed to sign out other sessions");
+      },
+    });
+  };
+
+  const handleResetOnboarding = () => {
+    resetOnboarding.mutate(undefined, {
+      onSuccess: () => {
+        toast.success("Onboarding reset. You will see it on your next visit.");
+      },
+      onError: () => {
+        toast.error("Failed to reset onboarding");
       },
     });
   };
@@ -338,6 +352,41 @@ export default function ProfileSettingsPage() {
                       );
                     })}
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Onboarding Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <div className="bg-primary/10 flex size-8 items-center justify-center rounded-lg">
+                    <RotateCcw className="text-primary size-4" />
+                  </div>
+                  <div>
+                    <CardTitle>Onboarding</CardTitle>
+                    <CardDescription>
+                      Reset the welcome experience
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-muted-foreground text-sm">
+                    This will show the onboarding experience again the next time
+                    you visit the chat.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={handleResetOnboarding}
+                    disabled={resetOnboarding.isPending}
+                  >
+                    <RotateCcw className="mr-2 size-4" />
+                    {resetOnboarding.isPending
+                      ? "Resetting..."
+                      : "Reset Onboarding"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
