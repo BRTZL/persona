@@ -12,6 +12,7 @@ import type { Character } from "@/lib/characters";
 import { getCharacter } from "@/lib/characters";
 import { DEFAULT_MODEL, type Model } from "@/lib/models";
 import type { Message as DbMessage } from "@/queries";
+import { useUsage } from "@/queries";
 
 type ChatContentProps = {
   /** Character for the chat - if undefined, shows character selector */
@@ -166,6 +167,10 @@ export function ChatContent({
   // Use clipboard hook for copy functionality
   const { copy } = useClipboard();
 
+  // Check usage limits
+  const { data: usage } = useUsage();
+  const isRateLimited = usage?.remaining === 0;
+
   // Auto-send message if provided (from URL params)
   useEffect(() => {
     if (
@@ -234,6 +239,7 @@ export function ChatContent({
         onStop={stop}
         isLoading={isLoading}
         isStreaming={isStreaming}
+        isRateLimited={isRateLimited}
         character={selectedCharacter}
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}

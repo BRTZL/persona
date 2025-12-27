@@ -2,8 +2,9 @@
 
 import { Sparkles } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { UsageIndicator } from "@/components/chat/usage-indicator";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import type { Character } from "@/lib/characters";
 
 type ChatHeaderProps = {
@@ -13,6 +14,7 @@ type ChatHeaderProps = {
 
 export function ChatHeader({ character, hasStartedChat }: ChatHeaderProps) {
   const showCharacterInfo = character && hasStartedChat;
+  const { isMobile } = useSidebar();
 
   return (
     <header className="bg-background z-10 flex h-16 w-full shrink-0 items-center gap-3 border-b px-4">
@@ -39,7 +41,8 @@ export function ChatHeader({ character, hasStartedChat }: ChatHeaderProps) {
           </>
         )}
       </div>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        {isMobile && <UsageIndicator variant="header" />}
         <ThemeToggle />
       </div>
     </header>

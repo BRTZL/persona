@@ -32,8 +32,12 @@ ALTER TABLE favorite_characters
 -- Conversations Table
 -- -----------------------------------------------------------------------------
 
--- Drop existing policy
+-- Drop existing policies (both old and new names for idempotency)
 DROP POLICY IF EXISTS "Users own conversations" ON conversations;
+DROP POLICY IF EXISTS "conversations_select_own" ON conversations;
+DROP POLICY IF EXISTS "conversations_insert_own" ON conversations;
+DROP POLICY IF EXISTS "conversations_update_own" ON conversations;
+DROP POLICY IF EXISTS "conversations_delete_own" ON conversations;
 
 -- SELECT: Users can only view their own conversations
 CREATE POLICY "conversations_select_own"
@@ -60,8 +64,12 @@ CREATE POLICY "conversations_delete_own"
 -- Messages Table
 -- -----------------------------------------------------------------------------
 
--- Drop existing policy
+-- Drop existing policies (both old and new names for idempotency)
 DROP POLICY IF EXISTS "Users access own messages" ON messages;
+DROP POLICY IF EXISTS "messages_select_own" ON messages;
+DROP POLICY IF EXISTS "messages_insert_own" ON messages;
+DROP POLICY IF EXISTS "messages_update_own" ON messages;
+DROP POLICY IF EXISTS "messages_delete_own" ON messages;
 
 -- SELECT: Users can only view messages in their own conversations
 CREATE POLICY "messages_select_own"
@@ -118,8 +126,12 @@ CREATE POLICY "messages_delete_own"
 -- Favorite Characters Table
 -- -----------------------------------------------------------------------------
 
--- Drop existing policy
+-- Drop existing policies (both old and new names for idempotency)
 DROP POLICY IF EXISTS "Users own favorites" ON favorite_characters;
+DROP POLICY IF EXISTS "favorites_select_own" ON favorite_characters;
+DROP POLICY IF EXISTS "favorites_insert_own" ON favorite_characters;
+DROP POLICY IF EXISTS "favorites_update_own" ON favorite_characters;
+DROP POLICY IF EXISTS "favorites_delete_own" ON favorite_characters;
 
 -- SELECT: Users can only view their own favorites
 CREATE POLICY "favorites_select_own"

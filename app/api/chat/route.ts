@@ -71,7 +71,45 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  // 2. Parse and validate request body
+  // 2. Check rate limit before processing
+  const { data: usageData, error: usageError } = await supabase.rpc(
+    "get_daily_message_usage",
+    { p_user_id: user.id }
+  );
+
+  if (usageError) {
+    console.error("Rate limit check error:", usageError);
+    return new Response(
+      JSON.stringify({
+        error: "Unable to verify usage limits",
+        message: "Please try again later",
+      }),
+      {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  if (usageData && usageData.length > 0) {
+    const usage = usageData[0];
+    if (usage.remaining <= 0) {
+      return new Response(
+        JSON.stringify({
+          error: "Daily message limit reached",
+          message_count: usage.message_count,
+          daily_limit: usage.daily_limit,
+          remaining: 0,
+        }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+  }
+
+  // 3. Parse and validate request body
   const body = await request.json();
   const parsed = ChatRequestSchema.safeParse(body);
 
@@ -99,7 +137,7 @@ export async function POST(request: Request) {
   const lastUserMessage = messages.filter((m) => m.role === "user").pop();
   const userMessageText = lastUserMessage?.content ?? "";
 
-  // 3. Validate character
+  // 4. Validate character
   if (!isValidCharacterSlug(characterSlug)) {
     return new Response("Invalid character", { status: 400 });
   }
@@ -109,7 +147,7 @@ export async function POST(request: Request) {
     return new Response("Character not found", { status: 404 });
   }
 
-  // 4. Handle conversation creation/verification
+  // 5. Handle conversation creation/verification
   let actualConversationId = conversationId;
   let isNewConversation = false;
   let currentTitle = "";
@@ -149,7 +187,7 @@ export async function POST(request: Request) {
     currentTitle = existingConv.title ?? "";
   }
 
-  // 5. Save the user message BEFORE streaming
+  // 6. Save the user message BEFORE streaming
   const { error: userMsgError } = await supabase.from("messages").insert({
     conversation_id: actualConversationId,
     role: "user",
@@ -160,7 +198,7 @@ export async function POST(request: Request) {
     return new Response("Failed to save message", { status: 500 });
   }
 
-  // 6. Stream response with AI SDK
+  // 7. Stream response with AI SDK
   const result = streamText({
     model: openrouter(selectedModel),
     system: character.systemPrompt,
@@ -170,7 +208,7 @@ export async function POST(request: Request) {
       chunking: "word",
     }),
     onFinish: async ({ text }: { text: string }) => {
-      // 7. Save assistant message AFTER streaming completes
+      // 9. Save assistant message AFTER streaming completes
       const { error: assistantMsgError } = await supabase
         .from("messages")
         .insert({
@@ -183,13 +221,13 @@ export async function POST(request: Request) {
         // Silent fail - message streaming already completed
       }
 
-      // 8. Update conversation timestamp
+      // 10. Update conversation timestamp
       await supabase
         .from("conversations")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", actualConversationId);
 
-      // 9. Generate AI title for new conversations or if title is still generic
+      // 11. Generate AI title for new conversations or if title is still generic
       // Title is considered "generic" if it's just the first 50 chars of user message
       const messageCount = messages.length;
       const isGenericTitle = currentTitle === userMessageText.slice(0, 50);
@@ -209,7 +247,7 @@ export async function POST(request: Request) {
     },
   });
 
-  // 10. Return streaming response with conversation ID in header
+  // 12. Return streaming response with conversation ID in header
   return result.toTextStreamResponse({
     headers: {
       "X-Conversation-Id": actualConversationId,

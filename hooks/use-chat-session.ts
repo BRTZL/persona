@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { UIMessage } from "ai";
 import { TextStreamChatTransport } from "ai";
 import type { Model } from "@/lib/models";
-import { chatKeys } from "@/queries";
+import { chatKeys, usageKeys } from "@/queries";
 
 /**
  * Database message format - matches what we get from Supabase
@@ -187,6 +187,9 @@ export function useChatSession(
     onFinish: () => {
       // Invalidate conversations list to update sidebar
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+
+      // Invalidate usage to reflect new message count
+      queryClient.invalidateQueries({ queryKey: usageKeys.daily() });
 
       // Invalidate again after delay to catch async title generation
       setTimeout(() => {
