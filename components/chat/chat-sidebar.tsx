@@ -280,7 +280,7 @@ export function ChatSidebar({ currentConversationId }: ChatSidebarProps) {
         <UsageIndicator variant="sidebar" />
         <div className="p-2 pt-0">
           <SidebarMenuButton asChild>
-            <Link href="/settings/profile" className="flex items-center gap-2">
+            <Link href="/settings" className="flex items-center gap-2">
               <div className="bg-primary/10 flex size-6 shrink-0 items-center justify-center rounded-full">
                 <span className="text-primary text-xs font-medium">
                   {avatarInitial}
@@ -307,8 +307,8 @@ export function ChatSidebar({ currentConversationId }: ChatSidebarProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              variant="destructive"
               onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteConversation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>

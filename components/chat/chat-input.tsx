@@ -1,8 +1,10 @@
 "use client";
 
-import { ArrowUp, Square } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, ArrowUp, Square } from "lucide-react";
 import { CharacterSelector } from "@/components/chat/character-selector";
 import { ModelSelector } from "@/components/chat/model-selector";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   PromptInput,
@@ -57,6 +59,22 @@ export function ChatInput({
   return (
     <div className="bg-background z-10 shrink-0 px-3 pb-3 md:px-5 md:pb-5">
       <div className="mx-auto max-w-3xl">
+        {isRateLimited && (
+          <Alert variant="destructive" className="mb-3">
+            <AlertCircle className="size-4" />
+            <AlertTitle>Daily message limit reached</AlertTitle>
+            <AlertDescription>
+              You&apos;ve used all your free messages for today.{" "}
+              <Link
+                href="/settings/subscription"
+                className="font-medium underline"
+              >
+                Upgrade your plan
+              </Link>{" "}
+              for unlimited messages.
+            </AlertDescription>
+          </Alert>
+        )}
         <PromptInput
           isLoading={isLoading}
           value={input}
@@ -67,6 +85,7 @@ export function ChatInput({
           <div className="flex flex-col">
             <PromptInputTextarea
               placeholder={placeholder}
+              disabled={isRateLimited}
               className="min-h-11 pt-3 pl-4 text-base leading-[1.3] sm:text-base md:text-base"
             />
 
